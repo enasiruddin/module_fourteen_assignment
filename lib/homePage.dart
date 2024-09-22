@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
@@ -10,7 +11,8 @@ class CRUDApp extends StatefulWidget {
 }
 
 class _CRUDAppState extends State<CRUDApp> {
-  DateTime dateTimes = DateTime.timestamp();
+
+  DateTime datetimes = DateTime.now();
 
   static ScaffoldFeatureController snackbarmsg(
       BuildContext context, String? msg) {
@@ -136,6 +138,7 @@ class _CRUDAppState extends State<CRUDApp> {
                           controller: TEUnitPrice,
                           labelText: "UnitPrice",
                           hintText: 'Enter UnitPrice',
+                          keyboardType: TextInputType.number,
                           validator: (value) {
                             if (value == null || value.isEmpty) {
                               return "Please enter UnitPrice";
@@ -155,6 +158,7 @@ class _CRUDAppState extends State<CRUDApp> {
                           controller: TEQty,
                           labelText: "Quantity",
                           hintText: 'Enter Quantity',
+                          keyboardType: TextInputType.number,
                           validator: (value) {
                             if (value == null || value.isEmpty) {
                               return "Please enter Quantity";
@@ -252,7 +256,7 @@ class _CRUDAppState extends State<CRUDApp> {
       "UnitPrice": TEUnitPrice.text,
       "Qty": TEQty.text,
       "TotalPrice": totalPrice.toString(),
-      "CreatedDate": dateTimes.toString(),
+      "CreatedDate": datetimes.toString(),
     };
     http.Response response = await http.post(uri,
         headers: {"Content-Type": "application/json"},
@@ -270,7 +274,7 @@ class _CRUDAppState extends State<CRUDApp> {
       "UnitPrice": TEUnitPrice.text,
       "Qty": TEQty.text,
       "TotalPrice": totalPrice.toString(),
-      "CreatedDate": dateTimes.toString(),
+      "CreatedDate": datetimes.toString(),
     };
     http.Response response = await http.post(uri,
         headers: {"Content-Type": "application/json"},
@@ -280,14 +284,14 @@ class _CRUDAppState extends State<CRUDApp> {
   }
 
   Future<void> deleteProduct({required String id}) async {
-
-    Uri uri = Uri.parse("https://164.68.107.70:6060/api/v1/DeleteProduct/$id");
-    http.Response response = await http.delete(
-        uri,
-    );
-    print(response.statusCode);
+    Uri uri = Uri.parse("http://164.68.107.70:6060/api/v1/DeleteProduct/$id");
+    final response = await http.get(uri);
+    if (response.statusCode != 200) {
+      throw Exception('Failed to delete product');
+    }
     getProductList();
   }
+
 //................API End.................
 
   @override
@@ -302,158 +306,161 @@ class _CRUDAppState extends State<CRUDApp> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text("CRUD HomePage"),
+        title: Text("CRUD"),
         centerTitle: true,
-        backgroundColor: Colors.green,
+        backgroundColor: Colors.white,
         actions: [
-          IconButton(
-              onPressed: () {
-                getProductList();
-              },
-              icon: Icon(Icons.refresh)),
           IconButton(
               onPressed: () {
                 addOrEditWidget(context, 'Add');
               },
-              icon: Icon(Icons.add)),
+              icon: Icon(Icons.add, size: 40,)),
+          IconButton(
+              onPressed: () {
+                getProductList();
+              },
+              icon: Icon(Icons.refresh,size: 40,)),
+
         ],
       ),
       body: isloading
           ? Center(
               child: CircularProgressIndicator(),
             )
-          : Padding(
-              padding: const EdgeInsets.all(8.0),
-              child: ListView.builder(
-                  itemCount: products.length,
-                  itemBuilder: (BuildContext context, int index) {
-                    var product = products[index];
-                    DateTime dateTime = DateTime.parse(product.CreatedDate);
-                    return Padding(
-                      padding: const EdgeInsets.all(12.0),
-                      child: Column(
-                        children: [
-                          Row(
-                            children: [
-                              Expanded(
-                                  flex: 4,
-                                  child: Container(
-                                    child: Text(
-                                      "Image:",
-                                      style: TextStyle(
-                                          fontWeight: FontWeight.bold,
-                                          fontSize: 16),
+          : Container(
+            color: Colors.grey,
+            child: Padding(
+                padding: const EdgeInsets.all(8.0),
+                child: ListView.builder(
+                    itemCount: products.length,
+                    itemBuilder: (BuildContext context, int index) {
+                      var product = products[index];
+                      DateTime dateTime = DateTime.parse(product.CreatedDate);
+                      return Padding(
+                        padding: const EdgeInsets.all(6.0),
+                        child: Card(
+                          elevation: 5,
+                          child: Padding(
+                            padding: EdgeInsets.all(8.0),
+                            child: Column(
+                              children: [
+                                Row(
+                                  children: [
+                                    Expanded(
+                                        flex: 4,
+                                        child: Container(
+                                          child: Text(
+                                            "Image:",
+                                            style: TextStyle(
+                                                fontWeight: FontWeight.bold,
+                                                fontSize: 16),
+                                          ),
+                                        )),
+                                    Expanded(
+                                        flex: 8,
+                                        child: Column(
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
+                                          children: [
+                                            ClipOval(
+                                                child: Image.network(
+                                              product.Img,
+                                                  errorBuilder: (BuildContext context, Object exception, StackTrace? stackTrace) {
+                                                    return Icon(Icons.error, color: Colors.red,size: 40,); // Error hole ekta Icon dekhabe
+                                                  },
+                                              width: 48.0,
+                                              height: 48.0,
+                                              fit: BoxFit.cover,
+
+                                            )),
+                                          ],
+                                        )),
+                                  ],
+                                ),
+                                customRow(title: 'Name', value: product.ProductName),
+                                customRow(title: 'Code', value: product.ProductCode),
+                                customRow(
+                                    title: 'Unit Price', value: product.UnitPrice),
+                                customRow(title: 'Quantity', value: product.Qty),
+                                customRow(
+                                    title: 'Total Price', value: product.TotalPrice),
+                                customRow(
+                                    title: 'Created Date',
+                                    value:
+                                        '${dateTime.day}-${dateTime.month}-${dateTime.year} ${dateTime.hour}:${dateTime.minute}:${dateTime.second}'),
+                                Divider(
+                                  height: 10,
+                                  color: Colors.redAccent,
+                                ),
+                                Row(
+                                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                                  children: [
+                                    Expanded(
+                                      child: InkWell(
+                                        onTap: () {
+                                          addOrEditWidget(
+                                            context,
+                                            'Update',
+                                            id: product.id,
+                                            ProductName: product.ProductName,
+                                            ProductCode: product.ProductCode,
+                                            Img: product.Img,
+                                            UnitPrice: product.UnitPrice,
+                                            Qty: product.Qty,
+                                          );
+                                        },
+                                        child: Row(
+                                          mainAxisAlignment: MainAxisAlignment.center,
+                                          children: [
+                                            Icon(
+                                              Icons.edit,
+                                              color: Colors.green,
+                                            ),
+                                            Divider(
+                                              indent: 10.0,
+                                            ),
+                                            Text(
+                                              "edit",
+                                              style: TextStyle(fontSize: 16),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
                                     ),
-                                  )),
-                              Expanded(
-                                  flex: 8,
-                                  child: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      ClipOval(
-                                          child: Image.network(
-                                        "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSS1KXuKnsmMbfKsezIrpVsxsRvVDlERJLhoA&s",
-                                        width: 48.0,
-                                        height: 48.0,
-                                        fit: BoxFit.cover,
-                                      )),
-                                    ],
-                                  )),
-                            ],
-                          ),
-                          customRow(title: 'Name', value: product.ProductName),
-                          customRow(title: 'Code', value: product.ProductCode),
-                          customRow(
-                              title: 'Unit Price', value: product.UnitPrice),
-                          customRow(title: 'Quantity', value: product.Qty),
-                          customRow(
-                              title: 'Total Price', value: product.TotalPrice),
-                          customRow(
-                              title: 'Created Date',
-                              value:
-                                  '${dateTime.day}-${dateTime.month}-${dateTime.year} ${dateTime.hour}:${dateTime.minute}:${dateTime.second}'),
-                          Divider(
-                            height: 10,
-                            color: Colors.white,
-                          ),
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                            children: [
-                              Expanded(
-                                child: InkWell(
-                                  onTap: () {
-                                    addOrEditWidget(
-                                      context,
-                                      'Update',
-                                      id: product.id,
-                                      ProductName: product.ProductName,
-                                      ProductCode: product.ProductCode,
-                                      Img: product.Img,
-                                      UnitPrice: product.UnitPrice,
-                                      Qty: product.Qty,
-                                    );
-                                  },
-                                  child: Row(
-                                    mainAxisAlignment: MainAxisAlignment.center,
-                                    children: [
-                                      Icon(
-                                        Icons.edit,
-                                        color: Colors.green,
+                                    Expanded(
+                                      child: InkWell(
+                                        onTap: () {
+                                          deleteProduct(id: product.id);
+                                        },
+                                        child: Row(
+                                          mainAxisAlignment: MainAxisAlignment.center,
+                                          children: [
+                                            Icon(
+                                              Icons.delete_forever,
+                                              color: Colors.redAccent,
+                                            ),
+                                            Divider(
+                                              indent: 10.0,
+                                            ),
+                                            Text(
+                                              "delete",
+                                              style: TextStyle(fontSize: 16),
+                                            ),
+                                          ],
+                                        ),
                                       ),
-                                      Divider(
-                                        indent: 10.0,
-                                      ),
-                                      Text(
-                                        "edit",
-                                        style: TextStyle(fontSize: 16),
-                                      ),
-                                    ],
-                                  ),
+                                    )
+                                  ],
                                 ),
-                              ),
-                              Expanded(
-                                child: InkWell(
-                                  onTap: () {
-                                    deleteProduct(id: product.id);
-                                  },
-                                  child: Row(
-                                    mainAxisAlignment: MainAxisAlignment.center,
-                                    children: [
-                                      Icon(
-                                        Icons.delete_forever,
-                                        color: Colors.redAccent,
-                                      ),
-                                      Divider(
-                                        indent: 10.0,
-                                      ),
-                                      Text(
-                                        "delete",
-                                        style: TextStyle(fontSize: 16),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              )
-                            ],
+
+                              ],
+                            ),
                           ),
-                          Divider(
-                            height: 5,
-                            color: Colors.white,
-                          ),
-                          Divider(
-                            height: 2,
-                            color: Colors.red,
-                          ),
-                          Divider(
-                            height: 5,
-                            color: Colors.white,
-                          ),
-                        ],
-                      ),
-                    );
-                  }),
-            ),
+                        ),
+                      );
+                    }),
+              ),
+          ),
     );
   }
 
